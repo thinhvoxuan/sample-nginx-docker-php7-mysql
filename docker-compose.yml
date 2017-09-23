@@ -1,0 +1,47 @@
+version: "2"
+services:
+  website:
+    image: nginx:latest
+    ports:
+      - 60001:80
+    volumes:
+      - ./src:/code
+      - ./devops/conf/site.conf:/etc/nginx/conf.d/default.conf
+    links:
+      - php:php
+    depends_on:
+      - php
+
+  php:
+    image: thinhvoxuan/docker-wordpress
+    volumes:
+      - ./src:/code
+      - ./devops/conf/log.conf:/usr/local/etc/php-fpm.d/zz-log.conf
+    env_file:
+      - ./devops/env/web-variable.env
+    links:
+      - mysql:mysql
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:5.6
+    env_file:
+      - ./devops/env/web-variable.env
+    volumes:
+      - ./devops/stack/mysql/.db/mysql:/var/lib/mysql:rw
+      - ./devops/stack/mysql/:/stack/mysql:rw
+      - ./devops/stack/entrypoint:/docker-entrypoint-initdb.d
+
+  website_devtools:
+    image: rualatngua/devtools:2.0
+    links:
+      - mysql:mysql
+    env_file:
+      - ./devops/env/web-variable.env
+    ports:
+      - 60002:80
+    volumes:
+      - ./devops/migrations:/app
+    depends_on:
+      - unity_mysql
